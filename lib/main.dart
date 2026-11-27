@@ -92,7 +92,7 @@ class _VidoraMainScreenState extends State<VidoraMainScreen> {
         unselectedItemColor: Colors.white54,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.public), label: 'Global'),
-          BottomNavigationBarItem(icon: Icon(Icons.star), label: 'Stars'),
+          BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Search & Stars'),
           BottomNavigationBarItem(icon: Icon(Icons.add_circle, size: 34, color: Color(0xFFFFB800)), label: 'Post'),
           BottomNavigationBarItem(icon: Icon(Icons.chat_bubble), label: 'Chat'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
@@ -118,7 +118,7 @@ class _GlobalFeedPageState extends State<GlobalFeedPage> {
       'url': 'https://github.io',
       'user': '@vidora_official',
       'badge': 'OFFICIAL',
-      'desc': 'Ku soo biir @vidora_official si aad u furto abaalmarinta 10k Joins = \$100/bishii!',
+      'desc': 'Ku soo biir @vidora_official si aad u furto abaalmarinta 10k Joins = 100 Dollar/bishii!',
       'loves': 540,
       'comments': 48,
       'shares': 92,
@@ -195,10 +195,10 @@ class _GlobalFeedPageState extends State<GlobalFeedPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _giftOption(ctx, '🌹 Ubax', '10 Coins', creatorName),
-                _giftOption(ctx, '🔥 Dab', '50 Coins', creatorName),
-                _giftOption(ctx, '👑 Taaj', '200 Coins', creatorName),
-                _giftOption(ctx, '🦁 Libaax', '1000 Coins', creatorName),
+                _giftOption(ctx, Icons.local_florist, 'Ubax', '10 Coins', creatorName),
+                _giftOption(ctx, Icons.local_fire_department, 'Dab', '50 Coins', creatorName),
+                _giftOption(ctx, Icons.workspace_premium, 'Taaj', '200 Coins', creatorName),
+                _giftOption(ctx, Icons.diamond, 'Dheeman', '1000 Coins', creatorName),
               ],
             ),
           ],
@@ -207,12 +207,12 @@ class _GlobalFeedPageState extends State<GlobalFeedPage> {
     );
   }
 
-  Widget _giftOption(BuildContext ctx, String title, String price, String toUser) {
+  Widget _giftOption(BuildContext ctx, IconData icon, String name, String price, String toUser) {
     return GestureDetector(
       onTap: () {
         Navigator.pop(ctx);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Waxaad u dirtay $title -> $toUser!')),
+          SnackBar(content: Text('Waxaad u dirtay $name -> $toUser!')),
         );
       },
       child: Column(
@@ -220,10 +220,10 @@ class _GlobalFeedPageState extends State<GlobalFeedPage> {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(16)),
-            child: Text(title.split(' ')[0], style: const TextStyle(fontSize: 28)),
+            child: Icon(icon, size: 32, color: const Color(0xFFFFB800)),
           ),
           const SizedBox(height: 6),
-          Text(title.split(' ')[1], style: const TextStyle(fontWeight: FontWeight.bold)),
+          Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
           Text(price, style: const TextStyle(fontSize: 11, color: Color(0xFFFFB800))),
         ],
       ),
@@ -323,4 +323,3 @@ class _VideoPlayerCardState extends State<VideoPlayerCard> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
-                children: [
