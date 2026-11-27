@@ -10,14 +10,13 @@ void main() async {
     url: 'https://supabase.co',
     anonKey: 'sb_publishable_fSVPb0YuGQ5W9uOsD6IgYw_wsx7HXJ1',
   );
-  runApp(const VidoraGlobalApp());
+  runApp(const VidoraApp());
 }
 
-final supabase = Supabase.instance.client;
+final db = Supabase.instance.client;
 
-class VidoraGlobalApp extends StatelessWidget {
-  const VidoraGlobalApp({super.key});
-
+class VidoraApp extends StatelessWidget {
+  const VidoraApp({super.key});
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -27,49 +26,45 @@ class VidoraGlobalApp extends StatelessWidget {
         scaffoldBackgroundColor: const Color(0xFF070B14),
         primaryColor: const Color(0xFFFFB800),
       ),
-      home: const VidoraMainScreen(),
+      home: const MainHome(),
     );
   }
 }
 
-class VidoraMainScreen extends StatefulWidget {
-  const VidoraMainScreen({super.key});
-
+class MainHome extends StatefulWidget {
+  const MainHome({super.key});
   @override
-  State<VidoraMainScreen> createState() => _VidoraMainScreenState();
+  State<MainHome> createState() => _MainHomeState();
 }
 
-class _VidoraMainScreenState extends State<VidoraMainScreen> {
-  int _idx = 0;
-  String user = '@vidora_creator';
+class _MainHomeState extends State<MainHome> {
+  int idx = 0;
   int joins = 0;
   int views = 0;
   bool official = false;
 
   @override
   Widget build(BuildContext context) {
-    final pages = [
-      FeedTab(
+    final screens = [
+      FeedScreen(
         onJoin: () => setState(() => joins++),
         onView: () => setState(() => views++),
       ),
-      const SearchStarsTab(),
-      UploadTab(user: user, onDone: () => setState(() => _idx = 0)),
-      ChatTab(user: user),
-      ProfileTab(
-        user: user,
+      const SearchScreen(),
+      UploadScreen(onDone: () => setState(() => idx = 0)),
+      const ChatScreen(),
+      ProfileScreen(
         joins: joins,
         views: views,
         official: official,
         onOfficial: () => setState(() => official = !official),
       ),
     ];
-
     return Scaffold(
-      body: pages[_idx],
+      body: screens[idx],
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _idx,
-        onTap: (i) => setState(() => _idx = i),
+        currentIndex: idx,
+        onTap: (i) => setState(() => idx = i),
         type: BottomNavigationBarType.fixed,
         backgroundColor: const Color(0xFF0D1322),
         selectedItemColor: const Color(0xFFFFB800),
@@ -86,78 +81,81 @@ class _VidoraMainScreenState extends State<VidoraMainScreen> {
   }
 }
 
-class FeedTab extends StatefulWidget {
+class FeedScreen extends StatefulWidget {
   final VoidCallback onJoin;
   final VoidCallback onView;
-  const FeedTab({super.key, required this.onJoin, required this.onView});
-
+  const FeedScreen({super.key, required this.onJoin, required this.onView});
   @override
-  State<FeedTab> createState() => _FeedTabState();
+  State<FeedScreen> createState() => _FeedScreenState();
 }
 
-class _FeedTabState extends State<FeedTab> {
-  List<Map<String, dynamic>> items = [
+class _FeedScreenState extends State<FeedScreen> {
+  List<Map<String, dynamic>> list = [
     {
       'ad': false,
       'url': 'https://github.io',
       'user': '@vidora_official',
-      'badge': 'OFFICIAL',
+      'tag': 'OFFICIAL',
       'desc': 'Ku biir @vidora_official si aad u furto 10k Joins = 100 Dollar/bishii!',
       'loves': 540,
-      'comments': 48,
+      'comments': 2,
       'shares': 92,
       'loved': false,
       'joined': false,
+      'commentList': ['@amina: App cajiib ah!', '@john_usa: Love VIDORA Global!'],
     },
     {
       'ad': false,
       'url': 'https://github.io',
       'user': '@alex_london',
-      'badge': '1M STAR',
+      'tag': '1M+ STAR',
       'desc': 'Hello from London! VIDORA Global — caddaan iyo madow hal meel!',
       'loves': 12400,
-      'comments': 320,
+      'comments': 1,
       'shares': 810,
       'loved': false,
       'joined': false,
+      'commentList': ['@kismaayo_star: Soo dhawoow saaxiib!'],
     },
     {
       'ad': true,
       'url': 'https://github.io',
       'user': 'VIDORA Ads • Sponsored',
-      'badge': 'AD',
+      'tag': 'AD',
       'desc': 'Ku xayeysii ganacsigaaga adduunka oo dhan — VIDORA Ads!',
       'loves': 120,
-      'comments': 5,
+      'comments': 0,
       'shares': 14,
       'loved': false,
       'joined': false,
+      'commentList': <String>[],
     },
   ];
 
   @override
   void initState() {
     super.initState();
-    _fetchVideos();
+    _load();
   }
 
-  Future<void> _fetchVideos() async {
+  Future<void> _load() async {
     try {
-      final res = await supabase.from('videos').select().order('created_at', ascending: false);
+      final res = await db.from('videos').select().order('created_at', ascending: false);
       if (res.isNotEmpty && mounted) {
         setState(() {
           for (var v in res) {
-            items.insert(0, {
+            list.insert(0, {
               'ad': false,
               'url': v['video_url'],
               'user': v['username'] ?? '@creator',
-              'badge': 'NEW',
+              'tag': 'NEW',
               'desc': v['caption'] ?? '',
               'loves': v['loves_count'] ?? 0,
-              'comments': v['comments_count'] ?? 0,
+              'comments': 0,
               'shares': v['shares_count'] ?? 0,
               'loved': false,
               'joined': false,
+              'commentList': <String>[],
             });
           }
         });
@@ -165,49 +163,58 @@ class _FeedTabState extends State<FeedTab> {
     } catch (_) {}
   }
 
-  void _openGifts(String toUser) {
+  void _openComments(int index) {
+    final txt = TextEditingController();
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: const Color(0xFF111827),
       builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom, left: 16, right: 16, top: 16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('U dir Gift -> $toUser', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFFFFB800))),
-            const SizedBox(height: 16),
+            const Text('Comments (Faallooyinka)', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFFFB800))),
+            const SizedBox(height: 10),
+            ...(list[index]['commentList'] as List<String>).map((c) => ListTile(title: Text(c))),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _giftBtn(ctx, Icons.local_florist, 'Ubax', '10 Coins', toUser),
-                _giftBtn(ctx, Icons.local_fire_department, 'Dab', '50 Coins', toUser),
-                _giftBtn(ctx, Icons.workspace_premium, 'Taaj', '200 Coins', toUser),
-                _giftBtn(ctx, Icons.diamond, 'Dheeman', '1000 Coins', toUser),
+                Expanded(child: TextField(controller: txt, decoration: const InputDecoration(hintText: 'Qor faallo...'))),
+                IconButton(
+                  icon: const Icon(Icons.send, color: Color(0xFFFFB800)),
+                  onPressed: () {
+                    if (txt.text.trim().isEmpty) return;
+                    setState(() {
+                      (list[index]['commentList'] as List<String>).add('@vidora_creator: ${txt.text.trim()}');
+                      list[index]['comments'] += 1;
+                    });
+                    Navigator.pop(ctx);
+                  },
+                ),
               ],
             ),
+            const SizedBox(height: 12),
           ],
         ),
       ),
     );
   }
 
-  Widget _giftBtn(BuildContext ctx, IconData icon, String name, String price, String toUser) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.pop(ctx);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Waxaad u dirtay $name -> $toUser!')));
-      },
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(14)),
-            child: Icon(icon, size: 30, color: const Color(0xFFFFB800)),
-          ),
-          const SizedBox(height: 4),
-          Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
-          Text(price, style: const TextStyle(fontSize: 11, color: Color(0xFFFFB800))),
-        ],
+  void _gift(String to) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF111827),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(20),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            IconButton(icon: const Icon(Icons.local_florist, color: Color(0xFFFFB800), size: 36), onPressed: () => Navigator.pop(ctx)),
+            IconButton(icon: const Icon(Icons.local_fire_department, color: Color(0xFFFFB800), size: 36), onPressed: () => Navigator.pop(ctx)),
+            IconButton(icon: const Icon(Icons.workspace_premium, color: Color(0xFFFFB800), size: 36), onPressed: () => Navigator.pop(ctx)),
+            IconButton(icon: const Icon(Icons.diamond, color: Color(0xFFFFB800), size: 36), onPressed: () => Navigator.pop(ctx)),
+          ],
+        ),
       ),
     );
   }
@@ -225,57 +232,65 @@ class _FeedTabState extends State<FeedTab> {
       body: PageView.builder(
         scrollDirection: Axis.vertical,
         onPageChanged: (_) => widget.onView(),
-        itemCount: items.length,
-        itemBuilder: (context, i) {
-          final item = items[i];
-          return VideoCard(
-            item: item,
-            onLove: () => setState(() {
-              item['loved'] = !item['loved'];
-              item['loves'] += item['loved'] ? 1 : -1;
-            }),
-            onJoin: () {
-              setState(() => item['joined'] = !item['joined']);
-              widget.onJoin();
-            },
-            onGift: () => _openGifts(item['user']),
-          );
-        },
+        itemCount: list.length,
+        itemBuilder: (c, i) => VideoTile(
+          item: list[i],
+          onLove: () => setState(() {
+            list[i]['loved'] = !list[i]['loved'];
+            list[i]['loves'] += list[i]['loved'] ? 1 : -1;
+          }),
+          onJoin: () {
+            setState(() => list[i]['joined'] = !list[i]['joined']);
+            widget.onJoin();
+          },
+          onComment: () => _openComments(i),
+          onShare: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Link-ga muuqaalka waa la koobiyayay!'))),
+          onGift: () => _gift(list[i]['user']),
+        ),
       ),
     );
   }
 }
 
-class VideoCard extends StatefulWidget {
+class VideoTile extends StatefulWidget {
   final Map<String, dynamic> item;
   final VoidCallback onLove;
   final VoidCallback onJoin;
+  final VoidCallback onComment;
+  final VoidCallback onShare;
   final VoidCallback onGift;
-  const VideoCard({super.key, required this.item, required this.onLove, required this.onJoin, required this.onGift});
-
+  const VideoTile({
+    super.key,
+    required this.item,
+    required this.onLove,
+    required this.onJoin,
+    required this.onComment,
+    required this.onShare,
+    required this.onGift,
+  });
   @override
-  State<VideoCard> createState() => _VideoCardState();
+  State<VideoTile> createState() => _VideoTileState();
 }
 
-class _VideoCardState extends State<VideoCard> {
-  late VideoPlayerController _ctrl;
+class _VideoTileState extends State<VideoTile> {
+  late VideoPlayerController vc;
 
   @override
   void initState() {
     super.initState();
-    _ctrl = VideoPlayerController.networkUrl(Uri.parse(widget.item['url']))
+    vc = VideoPlayerController.networkUrl(Uri.parse(widget.item['url']))
       ..initialize().then((_) {
         if (mounted) {
           setState(() {});
-          _ctrl.play();
-          _ctrl.setLooping(true);
+          vc.play();
+          vc.setLooping(true);
         }
       });
   }
 
   @override
   void dispose() {
-    _ctrl.dispose();
+    vc.dispose();
     super.dispose();
   }
 
@@ -285,11 +300,8 @@ class _VideoCardState extends State<VideoCard> {
       fit: StackFit.expand,
       children: [
         Center(
-          child: _ctrl.value.isInitialized
-              ? ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: AspectRatio(aspectRatio: _ctrl.value.aspectRatio, child: VideoPlayer(_ctrl)),
-                )
+          child: vc.value.isInitialized
+              ? AspectRatio(aspectRatio: vc.value.aspectRatio, child: VideoPlayer(vc))
               : const CircularProgressIndicator(color: Color(0xFFFFB800)),
         ),
         Positioned(
@@ -299,16 +311,3 @@ class _VideoCardState extends State<VideoCard> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Text(widget.item['user'], style: const TextStyle(color: Color(0xFFFFB800), fontWeight: FontWeight.bold, fontSize: 16)),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(color: Colors.amber.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(8)),
-                    child: Text(widget.item['badge'], style: const TextStyle(fontSize: 10, color: Color(0xFFFFB800))),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(widget.item['desc'], style: const TextStyle(color: Colors.white, fontSize: 14)),
