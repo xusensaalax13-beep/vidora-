@@ -90,10 +90,10 @@ class FeedScreen extends StatefulWidget {
 }
 
 class _FeedScreenState extends State<FeedScreen> {
-  List<Map<String, dynamic>> list = [
+  List> list = [
     {
       'ad': false,
-      'url': 'https://github.io',
+      'url': 'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4',
       'user': '@vidora_official',
       'tag': 'OFFICIAL',
       'desc': 'Ku biir @vidora_official si aad u furto 10k Joins = 100 Dollar/bishii!',
@@ -106,7 +106,7 @@ class _FeedScreenState extends State<FeedScreen> {
     },
     {
       'ad': false,
-      'url': 'https://github.io',
+      'url': 'https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4',
       'user': '@alex_london',
       'tag': '1M+ STAR',
       'desc': 'Hello from London! VIDORA Global — caddaan iyo madow hal meel!',
@@ -119,7 +119,7 @@ class _FeedScreenState extends State<FeedScreen> {
     },
     {
       'ad': true,
-      'url': 'https://github.io',
+      'url': 'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4',
       'user': 'VIDORA Ads • Sponsored',
       'tag': 'AD',
       'desc': 'Ku xayeysii ganacsigaaga adduunka oo dhan — VIDORA Ads!',
@@ -307,4 +307,189 @@ class _VideoTileState extends State<VideoTile> {
               ? AspectRatio(aspectRatio: vc.value.aspectRatio, child: VideoPlayer(vc))
               : const CircularProgressIndicator(color: Color(0xFFFFB800)),
         ),
+        // Qaybtii go'nayd halkan ayay ka bilaabmaysaa:
         Positioned(
+          left: 16,
+          bottom: 24,
+          right: 80,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(widget.item['user'] as String, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(color: const Color(0xFFFFB800), borderRadius: BorderRadius.circular(4)),
+                    child: Text(widget.item['tag'] as String, style: const TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(widget.item['desc'] as String, style: const TextStyle(fontSize: 14)),
+              const SizedBox(height: 10),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isJoined ? Colors.grey[800] : const Color(0xFFFFB800),
+                  foregroundColor: isJoined ? Colors.white : Colors.black,
+                ),
+                onPressed: widget.onJoin,
+                child: Text(isJoined ? 'Joined ✓' : 'Join'),
+              ),
+            ],
+          ),
+        ),
+        Positioned(
+          right: 12,
+          bottom: 24,
+          child: Column(
+            children: [
+              IconButton(
+                icon: Icon(isLoved ? Icons.favorite : Icons.favorite_border, color: isLoved ? Colors.red : Colors.white, size: 32),
+                onPressed: widget.onLove,
+              ),
+              Text('${widget.item['loves']}'),
+              const SizedBox(height: 12),
+              IconButton(icon: const Icon(Icons.comment, size: 30), onPressed: widget.onComment),
+              Text('${widget.item['comments']}'),
+              const SizedBox(height: 12),
+              IconButton(icon: const Icon(Icons.share, size: 30), onPressed: widget.onShare),
+              Text('${widget.item['shares']}'),
+              const SizedBox(height: 12),
+              IconButton(icon: const Icon(Icons.card_giftcard, color: Color(0xFFFFB800), size: 30), onPressed: widget.onGift),
+              const Text('Gift'),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// --- QAYBAHA KALE EE APP-KA OO MAQNAA ---
+
+class SearchScreen extends StatelessWidget {
+  const SearchScreen({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Search VIDORA')),
+      body: const Padding(
+        padding: EdgeInsets.all(16.0),
+        child: TextField(
+          decoration: InputDecoration(
+            hintText: 'Raadi muuqaallo ama isticmaalayaal...',
+            prefixIcon: Icon(Icons.search, color: Color(0xFFFFB800)),
+            border: OutlineInputBorder(),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class UploadScreen extends StatefulWidget {
+  final VoidCallback onDone;
+  const UploadScreen({super.key, required this.onDone});
+  @override
+  State<UploadScreen> createState() => _UploadScreenState();
+}
+
+class _UploadScreenState extends State<UploadScreen> {
+  final captionCtrl = TextEditingController();
+  File? videoFile;
+
+  Future<void> _pickVideo() async {
+    final picked = await ImagePicker().pickVideo(source: ImageSource.gallery);
+    if (picked != null) {
+      setState(() => videoFile = File(picked.path));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Soo Geli Muuqaal')),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ElevatedButton.icon(
+              onPressed: _pickVideo,
+              icon: const Icon(Icons.video_library),
+              label: Text(videoFile == null ? 'Dooro Muuqaal' : 'Muuqaal waa la doortay ✓'),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: captionCtrl,
+              decoration: const InputDecoration(hintText: 'Qor faahfaahinta muuqaalka...', border: OutlineInputBorder()),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFFB800), foregroundColor: Colors.black),
+              onPressed: widget.onDone,
+              child: const Text('Post Now'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class ChatScreen extends StatelessWidget {
+  const ChatScreen({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('VIDORA Chat')),
+      body: const Center(child: Text('Fariimahaaga halkan ayay ka muuqan doonaan.')),
+    );
+  }
+}
+
+class ProfileScreen extends StatelessWidget {
+  final int joins;
+  final int views;
+  final bool official;
+  final VoidCallback onOfficial;
+  const ProfileScreen({
+    super.key,
+    required this.joins,
+    required this.views,
+    required this.official,
+    required this.onOfficial,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Profile')),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const CircleAvatar(radius: 40, backgroundColor: Color(0xFFFFB800), child: Icon(Icons.person, size: 40, color: Colors.black)),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text('@vidora_creator', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                if (official) const Icon(Icons.verified, color: Color(0xFFFFB800)),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text('Joins: $joins   |   Views: $views', style: const TextStyle(fontSize: 16)),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: onOfficial,
+              child: Text(official ? 'Ka saar Official Badge' : 'Dalbo Official Badge'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
