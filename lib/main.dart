@@ -40,60 +40,44 @@ class VidoraMainScreen extends StatefulWidget {
 }
 
 class _VidoraMainScreenState extends State<VidoraMainScreen> {
-  int _currentIndex = 0;
-
-  String username = '@vidora_creator';
-  int joinsCount = 0;
-  int totalViews = 0;
-  bool joinedOfficial = false;
-
-  void _toggleJoinOfficial() {
-    setState(() {
-      joinedOfficial = !joinedOfficial;
-    });
-  }
-
-  void _addJoin() {
-    setState(() {
-      joinsCount += 1;
-    });
-  }
-
-  void _addViews(int count) {
-    setState(() {
-      totalViews += count;
-    });
-  }
+  int _idx = 0;
+  String user = '@vidora_creator';
+  int joins = 0;
+  int views = 0;
+  bool official = false;
 
   @override
   Widget build(BuildContext context) {
     final pages = [
-      GlobalFeedPage(onJoinCreator: _addJoin, onViewVideo: () => _addViews(1)),
-      const TrendingStarsPage(),
-      UploadVideoPage(username: username, onUploaded: () => setState(() => _currentIndex = 0)),
-      FriendsChatPage(currentUser: username),
-      ProfileRewardsPage(
-        username: username,
-        joinsCount: joinsCount,
-        totalViews: totalViews,
-        joinedOfficial: joinedOfficial,
-        onToggleOfficial: _toggleJoinOfficial,
+      FeedTab(
+        onJoin: () => setState(() => joins++),
+        onView: () => setState(() => views++),
+      ),
+      const SearchStarsTab(),
+      UploadTab(user: user, onDone: () => setState(() => _idx = 0)),
+      ChatTab(user: user),
+      ProfileTab(
+        user: user,
+        joins: joins,
+        views: views,
+        official: official,
+        onOfficial: () => setState(() => official = !official),
       ),
     ];
 
     return Scaffold(
-      body: pages[_currentIndex],
+      body: pages[_idx],
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
+        currentIndex: _idx,
+        onTap: (i) => setState(() => _idx = i),
         type: BottomNavigationBarType.fixed,
         backgroundColor: const Color(0xFF0D1322),
         selectedItemColor: const Color(0xFFFFB800),
         unselectedItemColor: Colors.white54,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.public), label: 'Global'),
-          BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Search & Stars'),
-          BottomNavigationBarItem(icon: Icon(Icons.add_circle, size: 34, color: Color(0xFFFFB800)), label: 'Post'),
+          BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Search'),
+          BottomNavigationBarItem(icon: Icon(Icons.add_circle, size: 32, color: Color(0xFFFFB800)), label: 'Post'),
           BottomNavigationBarItem(icon: Icon(Icons.chat_bubble), label: 'Chat'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
@@ -102,23 +86,23 @@ class _VidoraMainScreenState extends State<VidoraMainScreen> {
   }
 }
 
-class GlobalFeedPage extends StatefulWidget {
-  final VoidCallback onJoinCreator;
-  final VoidCallback onViewVideo;
-  const GlobalFeedPage({super.key, required this.onJoinCreator, required this.onViewVideo});
+class FeedTab extends StatefulWidget {
+  final VoidCallback onJoin;
+  final VoidCallback onView;
+  const FeedTab({super.key, required this.onJoin, required this.onView});
 
   @override
-  State<GlobalFeedPage> createState() => _GlobalFeedPageState();
+  State<FeedTab> createState() => _FeedTabState();
 }
 
-class _GlobalFeedPageState extends State<GlobalFeedPage> {
-  List<Map<String, dynamic>> feedItems = [
+class _FeedTabState extends State<FeedTab> {
+  List<Map<String, dynamic>> items = [
     {
-      'isAd': false,
+      'ad': false,
       'url': 'https://github.io',
       'user': '@vidora_official',
       'badge': 'OFFICIAL',
-      'desc': 'Ku soo biir @vidora_official si aad u furto abaalmarinta 10k Joins = 100 Dollar/bishii!',
+      'desc': 'Ku biir @vidora_official si aad u furto 10k Joins = 100 Dollar/bishii!',
       'loves': 540,
       'comments': 48,
       'shares': 92,
@@ -126,11 +110,11 @@ class _GlobalFeedPageState extends State<GlobalFeedPage> {
       'joined': false,
     },
     {
-      'isAd': false,
+      'ad': false,
       'url': 'https://github.io',
       'user': '@alex_london',
       'badge': '1M STAR',
-      'desc': 'Hello from London! Loving VIDORA Global — caddaan iyo madow hal meel!',
+      'desc': 'Hello from London! VIDORA Global — caddaan iyo madow hal meel!',
       'loves': 12400,
       'comments': 320,
       'shares': 810,
@@ -138,7 +122,7 @@ class _GlobalFeedPageState extends State<GlobalFeedPage> {
       'joined': false,
     },
     {
-      'isAd': true,
+      'ad': true,
       'url': 'https://github.io',
       'user': 'VIDORA Ads • Sponsored',
       'badge': 'AD',
@@ -154,17 +138,17 @@ class _GlobalFeedPageState extends State<GlobalFeedPage> {
   @override
   void initState() {
     super.initState();
-    _loadSupabaseVideos();
+    _fetchVideos();
   }
 
-  Future<void> _loadSupabaseVideos() async {
+  Future<void> _fetchVideos() async {
     try {
-      final data = await supabase.from('videos').select().order('created_at', ascending: false);
-      if (data.isNotEmpty) {
+      final res = await supabase.from('videos').select().order('created_at', ascending: false);
+      if (res.isNotEmpty && mounted) {
         setState(() {
-          for (var v in data) {
-            feedItems.insert(0, {
-              'isAd': false,
+          for (var v in res) {
+            items.insert(0, {
+              'ad': false,
               'url': v['video_url'],
               'user': v['username'] ?? '@creator',
               'badge': 'NEW',
@@ -181,7 +165,7 @@ class _GlobalFeedPageState extends State<GlobalFeedPage> {
     } catch (_) {}
   }
 
-  void _showGiftSheet(String creatorName) {
+  void _openGifts(String toUser) {
     showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xFF111827),
@@ -190,15 +174,15 @@ class _GlobalFeedPageState extends State<GlobalFeedPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('U dir Hadiyad (Gift) -> $creatorName', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFFFFB800))),
+            Text('U dir Gift -> $toUser', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFFFFB800))),
             const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _giftOption(ctx, Icons.local_florist, 'Ubax', '10 Coins', creatorName),
-                _giftOption(ctx, Icons.local_fire_department, 'Dab', '50 Coins', creatorName),
-                _giftOption(ctx, Icons.workspace_premium, 'Taaj', '200 Coins', creatorName),
-                _giftOption(ctx, Icons.diamond, 'Dheeman', '1000 Coins', creatorName),
+                _giftBtn(ctx, Icons.local_florist, 'Ubax', '10 Coins', toUser),
+                _giftBtn(ctx, Icons.local_fire_department, 'Dab', '50 Coins', toUser),
+                _giftBtn(ctx, Icons.workspace_premium, 'Taaj', '200 Coins', toUser),
+                _giftBtn(ctx, Icons.diamond, 'Dheeman', '1000 Coins', toUser),
               ],
             ),
           ],
@@ -207,22 +191,20 @@ class _GlobalFeedPageState extends State<GlobalFeedPage> {
     );
   }
 
-  Widget _giftOption(BuildContext ctx, IconData icon, String name, String price, String toUser) {
+  Widget _giftBtn(BuildContext ctx, IconData icon, String name, String price, String toUser) {
     return GestureDetector(
       onTap: () {
         Navigator.pop(ctx);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Waxaad u dirtay $name -> $toUser!')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Waxaad u dirtay $name -> $toUser!')));
       },
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(16)),
-            child: Icon(icon, size: 32, color: const Color(0xFFFFB800)),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(14)),
+            child: Icon(icon, size: 30, color: const Color(0xFFFFB800)),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
           Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
           Text(price, style: const TextStyle(fontSize: 11, color: Color(0xFFFFB800))),
         ],
@@ -237,30 +219,26 @@ class _GlobalFeedPageState extends State<GlobalFeedPage> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text('VIDORA GLOBAL', style: TextStyle(color: Color(0xFFFFB800), fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+        title: const Text('VIDORA GLOBAL', style: TextStyle(color: Color(0xFFFFB800), fontWeight: FontWeight.bold)),
         centerTitle: true,
       ),
       body: PageView.builder(
         scrollDirection: Axis.vertical,
-        onPageChanged: (_) => widget.onViewVideo(),
-        itemCount: feedItems.length,
-        itemBuilder: (context, index) {
-          final item = feedItems[index];
-          return VideoPlayerCard(
+        onPageChanged: (_) => widget.onView(),
+        itemCount: items.length,
+        itemBuilder: (context, i) {
+          final item = items[i];
+          return VideoCard(
             item: item,
-            onLove: () {
-              setState(() {
-                item['loved'] = !item['loved'];
-                item['loves'] += item['loved'] ? 1 : -1;
-              });
-            },
+            onLove: () => setState(() {
+              item['loved'] = !item['loved'];
+              item['loves'] += item['loved'] ? 1 : -1;
+            }),
             onJoin: () {
-              setState(() {
-                item['joined'] = !item['joined'];
-              });
-              widget.onJoinCreator();
+              setState(() => item['joined'] = !item['joined']);
+              widget.onJoin();
             },
-            onGift: () => _showGiftSheet(item['user']),
+            onGift: () => _openGifts(item['user']),
           );
         },
       ),
@@ -268,37 +246,36 @@ class _GlobalFeedPageState extends State<GlobalFeedPage> {
   }
 }
 
-class VideoPlayerCard extends StatefulWidget {
+class VideoCard extends StatefulWidget {
   final Map<String, dynamic> item;
   final VoidCallback onLove;
   final VoidCallback onJoin;
   final VoidCallback onGift;
-
-  const VideoPlayerCard({super.key, required this.item, required this.onLove, required this.onJoin, required this.onGift});
+  const VideoCard({super.key, required this.item, required this.onLove, required this.onJoin, required this.onGift});
 
   @override
-  State<VideoPlayerCard> createState() => _VideoPlayerCardState();
+  State<VideoCard> createState() => _VideoCardState();
 }
 
-class _VideoPlayerCardState extends State<VideoPlayerCard> {
-  late VideoPlayerController _controller;
+class _VideoCardState extends State<VideoCard> {
+  late VideoPlayerController _ctrl;
 
   @override
   void initState() {
     super.initState();
-    _controller = VideoPlayerController.networkUrl(Uri.parse(widget.item['url']))
+    _ctrl = VideoPlayerController.networkUrl(Uri.parse(widget.item['url']))
       ..initialize().then((_) {
         if (mounted) {
           setState(() {});
-          _controller.play();
-          _controller.setLooping(true);
+          _ctrl.play();
+          _ctrl.setLooping(true);
         }
       });
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _ctrl.dispose();
     super.dispose();
   }
 
@@ -308,10 +285,10 @@ class _VideoPlayerCardState extends State<VideoPlayerCard> {
       fit: StackFit.expand,
       children: [
         Center(
-          child: _controller.value.isInitialized
+          child: _ctrl.value.isInitialized
               ? ClipRRect(
                   borderRadius: BorderRadius.circular(20),
-                  child: AspectRatio(aspectRatio: _controller.value.aspectRatio, child: VideoPlayer(_controller)),
+                  child: AspectRatio(aspectRatio: _ctrl.value.aspectRatio, child: VideoPlayer(_ctrl)),
                 )
               : const CircularProgressIndicator(color: Color(0xFFFFB800)),
         ),
@@ -323,3 +300,15 @@ class _VideoPlayerCardState extends State<VideoPlayerCard> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
+                children: [
+                  Text(widget.item['user'], style: const TextStyle(color: Color(0xFFFFB800), fontWeight: FontWeight.bold, fontSize: 16)),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(color: Colors.amber.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(8)),
+                    child: Text(widget.item['badge'], style: const TextStyle(fontSize: 10, color: Color(0xFFFFB800))),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(widget.item['desc'], style: const TextStyle(color: Colors.white, fontSize: 14)),
