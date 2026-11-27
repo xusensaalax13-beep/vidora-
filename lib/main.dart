@@ -45,7 +45,7 @@ class _MainHomeState extends State<MainHome> {
 
   @override
   Widget build(BuildContext context) {
-    final screens = [
+    final screens = <Widget>[
       FeedScreen(
         onJoin: () => setState(() => joins++),
         onView: () => setState(() => views++),
@@ -102,7 +102,7 @@ class _FeedScreenState extends State<FeedScreen> {
       'shares': 92,
       'loved': false,
       'joined': false,
-      'commentList': ['@amina: App cajiib ah!', '@john_usa: Love VIDORA Global!'],
+      'commentList': <String>['@amina: App cajiib ah!', '@john_usa: Love VIDORA Global!'],
     },
     {
       'ad': false,
@@ -115,7 +115,7 @@ class _FeedScreenState extends State<FeedScreen> {
       'shares': 810,
       'loved': false,
       'joined': false,
-      'commentList': ['@kismaayo_star: Soo dhawoow saaxiib!'],
+      'commentList': <String>['@kismaayo_star: Soo dhawoow saaxiib!'],
     },
     {
       'ad': true,
@@ -186,7 +186,7 @@ class _FeedScreenState extends State<FeedScreen> {
                     if (txt.text.trim().isEmpty) return;
                     setState(() {
                       (list[index]['commentList'] as List<String>).add('@vidora_creator: ${txt.text.trim()}');
-                      list[index]['comments'] += 1;
+                      list[index]['comments'] = (list[index]['comments'] as int) + 1;
                     });
                     Navigator.pop(ctx);
                   },
@@ -236,16 +236,17 @@ class _FeedScreenState extends State<FeedScreen> {
         itemBuilder: (c, i) => VideoTile(
           item: list[i],
           onLove: () => setState(() {
-            list[i]['loved'] = !list[i]['loved'];
-            list[i]['loves'] += list[i]['loved'] ? 1 : -1;
+            bool loved = list[i]['loved'] as bool;
+            list[i]['loved'] = !loved;
+            list[i]['loves'] = (list[i]['loves'] as int) + (!loved ? 1 : -1);
           }),
           onJoin: () {
-            setState(() => list[i]['joined'] = !list[i]['joined']);
+            setState(() => list[i]['joined'] = !(list[i]['joined'] as bool));
             widget.onJoin();
           },
           onComment: () => _openComments(i),
           onShare: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Link-ga muuqaalka waa la koobiyayay!'))),
-          onGift: () => _gift(list[i]['user']),
+          onGift: () => _gift(list[i]['user'] as String),
         ),
       ),
     );
@@ -278,7 +279,7 @@ class _VideoTileState extends State<VideoTile> {
   @override
   void initState() {
     super.initState();
-    vc = VideoPlayerController.networkUrl(Uri.parse(widget.item['url']))
+    vc = VideoPlayerController.networkUrl(Uri.parse(widget.item['url'] as String))
       ..initialize().then((_) {
         if (mounted) {
           setState(() {});
@@ -296,6 +297,8 @@ class _VideoTileState extends State<VideoTile> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isJoined = widget.item['joined'] as bool;
+    final bool isLoved = widget.item['loved'] as bool;
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -305,9 +308,3 @@ class _VideoTileState extends State<VideoTile> {
               : const CircularProgressIndicator(color: Color(0xFFFFB800)),
         ),
         Positioned(
-          bottom: 24,
-          left: 16,
-          right: 85,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
